@@ -12,7 +12,7 @@ use quote::{Ident, Tokens};
 use serde::{Serialize, Deserialize};
 
 #[derive(Debug, PartialEq, Clone, Default)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(default))]
 pub struct MavProfile {
     pub includes: Vec<String>,
     pub messages: Vec<MavMessage>,
@@ -242,7 +242,7 @@ impl MavProfile {
 }
 
 #[derive(Debug, PartialEq, Clone, Default)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(default))]
 pub struct MavEnum {
     pub name: String,
     pub description: Option<String>,
@@ -293,7 +293,7 @@ impl MavEnum {
             let width = Ident::from(width);
             enum_def = quote!{
                 bitflags!{
-                    #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+                    #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(default))]
                     pub struct #enum_name: #width {
                         #(#defs)*
                     }
@@ -323,7 +323,7 @@ impl MavEnum {
 }
 
 #[derive(Debug, PartialEq, Clone, Default)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(default))]
 pub struct MavEnumEntry {
     pub value: Option<u32>,
     pub name: String,
@@ -332,7 +332,7 @@ pub struct MavEnumEntry {
 }
 
 #[derive(Debug, PartialEq, Clone, Default)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(default))]
 pub struct MavMessage {
     pub id: u32,
     pub name: String,
@@ -446,6 +446,7 @@ impl MavMessage {
             #description
             #[derive(Debug, Clone, PartialEq, Default)]
             #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+            #[cfg_attr(feature = "serde", serde(default))]
             pub struct #msg_name {
                 #(#name_types)*
             }
@@ -466,7 +467,7 @@ impl MavMessage {
 }
 
 #[derive(Debug, PartialEq, Clone, Default)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(default))]
 pub struct MavField {
     pub mavtype: MavType,
     pub name: String,

@@ -46,7 +46,7 @@ pub use self::common::MavMessage as MavMessage;
 
 /// Metadata from a MAVLink packet header
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(default))]
 pub struct MavHeader {
     pub system_id: u8,
     pub component_id: u8,

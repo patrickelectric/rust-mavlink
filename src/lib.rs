@@ -55,7 +55,7 @@ pub struct MavHeader {
 
 /// Versions of the Mavlink protocol that we support
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "serde", derive(Serialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(tag = "type"))]
 pub enum MavlinkVersion {
     V1,
@@ -84,7 +84,7 @@ impl Default for MavHeader {
 /// important to preserve information about the sender system
 /// and component id
 #[derive(Debug, Clone)]
-#[cfg_attr(feature = "serde", derive(Serialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct MavFrame {
     pub header: MavHeader,
     pub msg: MavMessage,

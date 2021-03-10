@@ -82,6 +82,7 @@ jobs:
     - name: Build
       run: cargo +nightly build --target thumbv7em-none-eabihf --manifest-path examples/embedded/Cargo.toml --out-dir $PWD --release -Z unstable-options
     - name: Get binary size
+      id: get_binary_size
       run: |
         BODY_SIZE="$(size -G -d mavlink-embedded)"
         echo "::set-output name=body_size::${BODY_SIZE}"
@@ -89,7 +90,7 @@ jobs:
       uses: marocchino/sticky-pull-request-comment@v2
       with:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        message: 'Size of the binary:\n${{ steps.set_env_var.outputs.body_size }}'
+        message: 'Size of the binary:<br>${{ steps.get_binary_size.outputs.body_size }}'
 
   deploy:
     needs: build

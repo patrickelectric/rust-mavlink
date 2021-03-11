@@ -84,7 +84,11 @@ jobs:
     - name: Get binary size
       id: get_binary_size
       run: |
-        BODY_SIZE="$(size -G -d mavlink-embedded)"
+        export OUTPUT="$(size -G -d mavlink-embedded)"
+        # Sanitize string for github env variable
+        BODY_SIZE="${OUTPUT//'%'/'%25'}"
+        BODY_SIZE="${OUTPUT//$'\n'/'%0A'}"
+        BODY_SIZE="${OUTPUT//$'\r'/'%0D'}"
         echo "::set-output name=body_size::${BODY_SIZE}"
     - name: Comment PR
       uses: marocchino/sticky-pull-request-comment@v2

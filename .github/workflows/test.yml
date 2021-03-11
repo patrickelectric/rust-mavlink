@@ -79,8 +79,12 @@ jobs:
         toolchain: nightly
         target: thumbv7em-none-eabihf
         override: true
-    - name: Build
-      run: cargo +nightly build --target thumbv7em-none-eabihf --manifest-path examples/embedded/Cargo.toml --out-dir $PWD --release -Z unstable-options
+    - name: Run cargo bloat
+      uses: orf/cargo-bloat-action@v1
+      working-directory: ./examples/embedded/
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        bloat_args: --target thumbv7em-none-eabihf --release
 
   deploy:
     needs: build

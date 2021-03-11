@@ -81,10 +81,10 @@ jobs:
         override: true
     - name: Run cargo bloat
       uses: orf/cargo-bloat-action@v1
+      working-directory: examples/embedded/
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         bloat_args: --target thumbv7em-none-eabihf --release
-        working-directory: examples/embedded/
 
   deploy:
     needs: build

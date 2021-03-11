@@ -85,7 +85,7 @@ jobs:
       uses: orf/cargo-bloat-action@v1
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
-        bloat_args: cargo +nightly bloat --target thumbv7em-none-eabihf --release
+        bloat_args: --target thumbv7em-none-eabihf --release
 
   deploy:
     needs: build

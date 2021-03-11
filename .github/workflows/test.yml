@@ -85,7 +85,8 @@ jobs:
       id: get_binary_size
       run: |
         find . | grep mavlink-embedded
-        size -G -d examples/embedded/mavlink-embedded &> output.txt
+        size -G -d mavlink-embedded &> output.txt
+        cat output.txt
         # Sanitize string for github env variable
         export OUTPUT="$(cat output.txt)"
         BODY_SIZE="${OUTPUT//'%'/'%25'}"

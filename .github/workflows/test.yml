@@ -79,24 +79,12 @@ jobs:
         toolchain: nightly
         target: thumbv7em-none-eabihf
         override: true
-    - name: Build
-      run: cargo +nightly build --target thumbv7em-none-eabihf --manifest-path examples/embedded/Cargo.toml --out-dir $PWD --release -Z unstable-options
-    - name: Get binary size
-      id: get_binary_size
-      run: |
-        find . | grep mavlink-embedded
-        ls ./mavlink-embedded
-        ls ./examples/embedded/target/thumbv7em-none-eabihf/release/mavlink-embedded
-        size -G -d mavlink-embedded
-        size -G -d ./examples/embedded/target/thumbv7em-none-eabihf/release/mavlink-embedded
-        objcopy mavlink-embedded -O app.bin
-        OUTPUT="$(stat -c %s app.bin)"
-        echo "::set-output name=body_size::${OUTPUT}"
-    - name: Comment PR
-      uses: marocchino/sticky-pull-request-comment@v2
+    - name: Change directory
+      run: cd examples/embedded/
+    - name: Run cargo bloat
+      uses: orf/cargo-bloat-action@v1
       with:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        message: 'Size of the binary (Bytes): ${{ steps.get_binary_size.outputs.body_size }}'
+        token: ${{ secrets.GITHUB_TOKEN }}
 
   deploy:
     needs: build

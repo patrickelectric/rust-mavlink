@@ -89,19 +89,14 @@ jobs:
         ls ./examples/embedded/target/thumbv7em-none-eabihf/release/mavlink-embedded
         size -G -d mavlink-embedded
         size -G -d ./examples/embedded/target/thumbv7em-none-eabihf/release/mavlink-embedded
-        size -G -d mavlink-embedded &> output.txt
-        cat output.txt
-        # Sanitize string for github env variable
-        export OUTPUT="$(cat output.txt)"
-        BODY_SIZE="${OUTPUT//'%'/'%25'}"
-        BODY_SIZE="${OUTPUT//$'\n'/'%0A'}"
-        BODY_SIZE="${OUTPUT//$'\r'/'%0D'}"
-        echo "::set-output name=body_size::${BODY_SIZE}"
+        objcopy mavlink-embedded -O app.bin
+        OUTPUT="$(stat -c %s app.bin)"
+        echo "::set-output name=body_size::${OUTPUT}"
     - name: Comment PR
       uses: marocchino/sticky-pull-request-comment@v2
       with:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        message: 'Size of the binary:<br>${{ steps.get_binary_size.outputs.body_size }}'
+        message: 'Size of the binary (Bytes): ${{ steps.get_binary_size.outputs.body_size }}'
 
   deploy:
     needs: build

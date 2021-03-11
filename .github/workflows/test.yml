@@ -79,13 +79,12 @@ jobs:
         toolchain: nightly
         target: thumbv7em-none-eabihf
         override: true
-    - name: Change directory
-      run: cd examples/embedded/
     - name: Run cargo bloat
       uses: orf/cargo-bloat-action@v1
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         bloat_args: --target thumbv7em-none-eabihf --release
+        working-directory: examples/embedded/
 
   deploy:
     needs: build

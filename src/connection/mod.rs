@@ -25,6 +25,7 @@ pub trait MavConnection<M: Message> {
 
     fn set_protocol_version(&mut self, version: MavlinkVersion);
     fn get_protocol_version(&self) -> MavlinkVersion;
+    fn reconnect(&mut self) {}
 
     /// Write whole frame
     fn send_frame(&self, frame: &MavFrame<M>) -> Result<usize, crate::error::MessageWriteError> {

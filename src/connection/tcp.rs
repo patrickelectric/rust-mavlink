@@ -1,7 +1,7 @@
 use crate::connection::MavConnection;
 use crate::{read_versioned_msg, write_versioned_msg, MavHeader, MavlinkVersion, Message};
 use std::io::{self};
-use std::net::ToSocketAddrs;
+use std::net::{ToSocketAddrs, SocketAddr};
 use std::net::{TcpListener, TcpStream};
 use std::sync::Mutex;
 use std::time::Duration;
@@ -23,7 +23,7 @@ pub fn select_protocol<M: Message>(
     }
 }
 
-pub fn tcpout<T: ToSocketAddrs>(address: T) -> io::Result<TcpConnection> {
+pub fn tcpout<T: ToSocketAddrs>(address: T) -> io::Result<TcpConnection> where T: std::fmt::Display  {
     let addr = address
         .to_socket_addrs()
         .unwrap()
@@ -33,6 +33,7 @@ pub fn tcpout<T: ToSocketAddrs>(address: T) -> io::Result<TcpConnection> {
     socket.set_read_timeout(Some(Duration::from_millis(100)))?;
 
     Ok(TcpConnection {
+        address: address.to_string(),
         reader: Mutex::new(socket.try_clone()?),
         writer: Mutex::new(TcpWrite {
             socket: socket,
@@ -42,7 +43,7 @@ pub fn tcpout<T: ToSocketAddrs>(address: T) -> io::Result<TcpConnection> {
     })
 }
 
-pub fn tcpin<T: ToSocketAddrs>(address: T) -> io::Result<TcpConnection> {
+pub fn tcpin<T: ToSocketAddrs>(address: T) -> io::Result<TcpConnection> where T: std::fmt::Display {
     let addr = address
         .to_socket_addrs()
         .unwrap()
@@ -55,6 +56,7 @@ pub fn tcpin<T: ToSocketAddrs>(address: T) -> io::Result<TcpConnection> {
         match incoming {
             Ok(socket) => {
                 return Ok(TcpConnection {
+                    address: address.to_string(),
                     reader: Mutex::new(socket.try_clone()?),
                     writer: Mutex::new(TcpWrite {
                         socket: socket,
@@ -76,6 +78,7 @@ pub fn tcpin<T: ToSocketAddrs>(address: T) -> io::Result<TcpConnection> {
 }
 
 pub struct TcpConnection {
+    address: String,
     reader: Mutex<TcpStream>,
     writer: Mutex<TcpWrite>,
     protocol_version: MavlinkVersion,
@@ -111,5 +114,13 @@ impl<M: Message> MavConnection<M> for TcpConnection {
 
     fn get_protocol_version(&self) -> MavlinkVersion {
         self.protocol_version
+    }
+
+    fn reconnect(&mut self) {
+        if self.address.starts_with("tcpout:") {
+            *self = tcpout(&self.address["tcpout:".len()..]).unwrap();
+        } else {
+            *self = tcpin(&self.address["tcpin:".len()..]).unwrap();
+        }
     }
 }

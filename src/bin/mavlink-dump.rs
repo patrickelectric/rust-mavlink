@@ -5,6 +5,8 @@ use std::{env, sync::Arc, thread, time::Duration};
 #[cfg(not(feature = "std"))]
 fn main() {}
 
+use ts_rs::TS;
+
 #[cfg(feature = "std")]
 fn main() {
     let args: Vec<_> = env::args().collect();

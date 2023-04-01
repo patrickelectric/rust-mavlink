@@ -17,14 +17,22 @@ use quote::{format_ident, quote};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, PartialEq, Clone, Default)]
+#[derive(Debug, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct MavProfile {
+    pub module_name: String,
     pub messages: HashMap<String, MavMessage>,
     pub enums: HashMap<String, MavEnum>,
 }
 
 impl MavProfile {
+    fn new(module_name: String) -> Self {
+        Self {
+            module_name,
+            messages: Default::default(),
+            enums: Default::default(),
+        }
+    }
     fn add_message(&mut self, message: &MavMessage) {
         match self.messages.entry(message.name.clone()) {
             Entry::Occupied(entry) => {
@@ -179,12 +187,16 @@ impl MavProfile {
             #[allow(unused_imports)]
             use bitflags::bitflags;
             #[allow(unused_imports)]
-            use heapless::Vec;
+            use heapless;
 
             use crate::{Message, error::*, bytes::Bytes, bytes_mut::BytesMut};
 
             #[cfg(feature = "serde")]
             use serde::{Serialize, Deserialize};
+
+
+            use ts_rs::TS;
+
 
             #(#enums)*
 
@@ -210,7 +222,11 @@ impl MavProfile {
         enums: &Vec<TokenStream>,
         structs: &Vec<TokenStream>,
     ) -> TokenStream {
+        let module_path = format!("{}/", self.module_name);
+        let module_path = quote!(#module_path);
         quote! {
+            #[derive(TS)]
+            #[ts(export, export_to=#module_path)]
             #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
             #[cfg_attr(feature = "serde", serde(tag = "type"))]
             pub enum MavMessage {
@@ -338,9 +354,10 @@ impl MavProfile {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Default)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct MavEnum {
+    pub module_name: String,
     pub name: String,
     pub description: Option<String>,
     pub entries: Vec<MavEnumEntry>,
@@ -349,6 +366,16 @@ pub struct MavEnum {
 }
 
 impl MavEnum {
+    fn new(module_name: String) -> Self {
+        Self {
+            module_name,
+            name: Default::default(),
+            description: Default::default(),
+            entries: Default::default(),
+            /// If contains Some, the string represents the type witdh for bitflags
+            bitfield: Default::default(),
+        }
+    }
     fn try_combine(&mut self, enm: &Self) {
         if self.name == enm.name {
             for enum_entry in &enm.entries {
@@ -427,10 +454,16 @@ impl MavEnum {
         let description = quote!();
 
         let enum_def;
+
+        let module_path = format!("{}/", self.module_name);
+        let module_path = quote!(#module_path);
+
         if let Some(width) = self.bitfield.clone() {
             let width = format_ident!("{}", width);
             enum_def = quote! {
                 bitflags!{
+                    #[derive(TS)]
+                    #[ts(export, export_to=#module_path)]
                     #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
                     #description
                     pub struct #enum_name: #width {
@@ -440,6 +473,8 @@ impl MavEnum {
             };
         } else {
             enum_def = quote! {
+                #[derive(TS)]
+                #[ts(export, export_to=#module_path)]
                 #[derive(Debug, Copy, Clone, PartialEq, FromPrimitive, ToPrimitive)]
                 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
                 #[cfg_attr(feature = "serde", serde(tag = "type"))]
@@ -471,9 +506,10 @@ pub struct MavEnumEntry {
     pub params: Option<Vec<String>>,
 }
 
-#[derive(Debug, PartialEq, Clone, Default)]
+#[derive(Debug, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct MavMessage {
+    pub module_name: String,
     pub id: u32,
     pub name: String,
     pub description: Option<String>,
@@ -481,6 +517,16 @@ pub struct MavMessage {
 }
 
 impl MavMessage {
+    fn new(module_name: String) -> Self {
+        Self {
+            module_name,
+            id: Default::default(),
+            name: Default::default(),
+            description: Default::default(),
+            fields: Default::default(),
+        }
+    }
+
     /// Return Token of "MESSAGE_NAME_DATA
     /// for mavlink struct data
     fn emit_struct_name(&self) -> TokenStream {
@@ -595,8 +641,13 @@ impl MavMessage {
         #[cfg(not(feature = "emit-description"))]
         let description = quote!();
 
+        let module_path = format!("{}/", self.module_name);
+        let module_path = quote!(#module_path);
+
         quote! {
             #description
+            #[derive(TS)]
+            #[ts(export, export_to=#module_path)]
             #[derive(Debug, Clone, PartialEq, Default)]
             #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
             pub struct #msg_name {
@@ -924,7 +975,7 @@ impl MavType {
                 // format!("[{};{}]", t.rust_type(), size)
                 if size > 32 {
                     // we have to use a vector to make our lives easier
-                    format!("Vec<{}, {}>", t.rust_type(), size)
+                    format!("heapless::Vec<{}, {}>", t.rust_type(), size)
                 } else {
                     // we can use a slice, as Rust derives lot of things for slices <= 32 elements
                     format!("[{};{}]", t.rust_type(), size)
@@ -1016,6 +1067,7 @@ fn is_valid_parent(p: Option<MavXmlElement>, s: MavXmlElement) -> bool {
 }
 
 pub fn parse_profile(
+    module_name: &str,
     definitions_dir: &Path,
     definition_file: &String,
     parsed_files: &mut HashSet<PathBuf>,
@@ -1025,10 +1077,16 @@ pub fn parse_profile(
 
     let mut stack: Vec<MavXmlElement> = vec![];
 
-    let mut profile = MavProfile::default();
+    eprintln!("potato----");
+    println!("cargo:warning={}", &module_name);
+    eprintln!("{}", &module_name);
+    dbg!("PATRICK");
+    dbg!(&module_name);
+
+    let mut profile = MavProfile::new(module_name.to_string());
     let mut field = MavField::default();
-    let mut message = MavMessage::default();
-    let mut mavenum = MavEnum::default();
+    let mut message = MavMessage::new(module_name.to_string());
+    let mut mavenum = MavEnum::new(module_name.to_string());
     let mut entry = MavEnumEntry::default();
     let mut include = String::new();
     let mut paramid: Option<usize> = None;
@@ -1078,14 +1136,14 @@ pub fn parse_profile(
                         is_in_extension = true;
                     }
                     MavXmlElement::Message => {
-                        message = Default::default();
+                        message = MavMessage::new(module_name.to_string());
                     }
                     MavXmlElement::Field => {
                         field = Default::default();
                         field.is_extension = is_in_extension;
                     }
                     MavXmlElement::Enum => {
-                        mavenum = Default::default();
+                        mavenum = MavEnum::new(module_name.to_string());
                     }
                     MavXmlElement::Entry => {
                         entry = Default::default();
@@ -1317,7 +1375,7 @@ pub fn parse_profile(
                         let include_file = Path::new(&definitions_dir).join(include.clone());
                         if !parsed_files.contains(&include_file) {
                             let included_profile =
-                                parse_profile(definitions_dir, &include, parsed_files);
+                                parse_profile(module_name, definitions_dir, &include, parsed_files);
                             for message in included_profile.messages.values() {
                                 profile.add_message(message);
                             }
@@ -1345,9 +1403,19 @@ pub fn parse_profile(
 
 /// Generate protobuf represenation of mavlink message set
 /// Generate rust representation of mavlink message set with appropriate conversion methods
-pub fn generate<W: Write>(definitions_dir: &Path, definition_file: &String, output_rust: &mut W) {
+pub fn generate<W: Write>(
+    module_name: &str,
+    definitions_dir: &Path,
+    definition_file: &String,
+    output_rust: &mut W,
+) {
     let mut parsed_files: HashSet<PathBuf> = HashSet::new();
-    let profile = parse_profile(definitions_dir, definition_file, &mut parsed_files);
+    let profile = parse_profile(
+        module_name,
+        definitions_dir,
+        definition_file,
+        &mut parsed_files,
+    );
 
     // rust file
     let rust_tokens = profile.emit_rust();

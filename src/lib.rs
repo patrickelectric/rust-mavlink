@@ -613,7 +613,8 @@ pub fn read_v2_msg<M: Message, R: Read>(
         let message = read_v2_raw_message(read)?;
         if !message.has_valid_crc::<M>() {
             // bad crc: ignore message
-            //dbg!("bad crc");
+            dbg!("bad crc");
+            // TODO: Add error here
             //continue;
         }
 

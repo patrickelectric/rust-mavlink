@@ -593,6 +593,7 @@ pub fn read_v2_raw_message<R: Read>(
         if reader.read_u8()? == MAV_STX_V2 {
             break;
         }
+        dbg!("not start byte");
     }
 
     let mut message = MAVLinkV2MessageRaw::new();
@@ -612,7 +613,8 @@ pub fn read_v2_msg<M: Message, R: Read>(
         let message = read_v2_raw_message(read)?;
         if !message.has_valid_crc::<M>() {
             // bad crc: ignore message
-            continue;
+            //dbg!("bad crc");
+            //continue;
         }
 
         return M::parse(MavlinkVersion::V2, message.message_id(), message.payload())

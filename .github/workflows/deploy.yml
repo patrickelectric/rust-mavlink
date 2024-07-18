@@ -1,6 +1,9 @@
 name: Deploy
 
-on: [push, pull_request]
+on:
+  push:
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+'
 
 jobs:
   deploy:
@@ -9,7 +12,7 @@ jobs:
     - uses: actions/checkout@master
       with:
         fetch-depth: 0
-        ref: ${{ github.event.pull_request.head.ref }}
+        ref: ${{ github.event.repository.default_branch }}
     - uses: actions-rs/toolchain@v1.0.7
       with:
         toolchain: stable
